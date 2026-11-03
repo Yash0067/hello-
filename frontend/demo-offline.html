@@ -203,9 +203,14 @@ html,body{overflow-x:hidden}
   .topbar h2{font-size:17px}
   .card,.panel-b{padding:14px}
   .panel-h{padding:13px 14px;align-items:flex-start;flex-wrap:wrap}
+  .panel-h .updated{width:100%;font-size:10px}
   .panel-h .btn{width:100%}
   .client-top{padding:14px}
   .client-top .actions .btn{flex:1}
+  .hist-item{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:8px 10px}
+  .hist-item .when{min-width:0;line-height:1.35;overflow-wrap:anywhere}
+  .hist-item .meta{grid-column:1/-1;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.4}
+  .hist-item [data-load]{grid-column:1/-1;width:100%;justify-content:center}
   .modal-h,.modal-b,.modal-f{padding-left:15px;padding-right:15px}
   .modal-f{flex-direction:column-reverse}
   .modal-f .btn{width:100%;justify-content:center}
