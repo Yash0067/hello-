@@ -26,6 +26,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -175,11 +176,19 @@ class SQLiteStore:
         self._lock = threading.Lock()
         self.init_db()
 
+    @contextmanager
     def _connect(self):
         conn = sqlite3.connect(self.db_path, timeout=25)
         conn.execute('PRAGMA busy_timeout=25000')
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def init_db(self):
         with self._connect() as conn:
@@ -742,14 +751,22 @@ _store = None
 _store_lock = threading.Lock()
 
 
-def get_store() -> SQLiteStore:
-    """Return the process-wide store. Sheets when configured, else SQLite."""
+def get_store():
+    """Return PostgreSQL outside explicit local/test mode; SQLite is local-only."""
     global _store
     if _store is not None:
         return _store
     with _store_lock:
         if _store is not None:
             return _store
+        environment = os.environ.get('APP_ENV', '').strip().lower()
+        if os.environ.get('DATABASE_URL', '').strip():
+            from postgres_store import PostgresStore
+            _store = PostgresStore()
+            print('Storage: PostgreSQL', flush=True)
+            return _store
+        if environment not in ('development', 'local', 'test'):
+            raise StoreError('DATABASE_URL is required outside local development.')
         data_dir = Path(os.environ.get('APP_DATA_DIR', str(Path(__file__).resolve().parent / 'data')))
         data_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
         sqlite_store = SQLiteStore(data_dir / 'boutique.sqlite3')
@@ -762,6 +779,22 @@ def get_store() -> SQLiteStore:
             _store = sqlite_store
             print('Storage: local SQLite at %s' % sqlite_store.db_path, flush=True)
         return _store
+
+
+def postgres_selected() -> bool:
+    return bool(os.environ.get('DATABASE_URL', '').strip())
+
+
+def create_appointment(row):
+    if postgres_selected():
+        return get_store().create_appointment(row)
+    return None
+
+
+def list_appointments():
+    if postgres_selected():
+        return get_store().list_appointments()
+    return None
 
 
 def reset_store_for_tests():

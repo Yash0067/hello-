@@ -20,6 +20,12 @@ import sqlite3
 import threading
 import time
 
+try:
+    from postgres_db import connection as postgres_connection, postgres_enabled
+except ImportError:
+    postgres_connection = None
+    postgres_enabled = lambda: False
+
 # ---------------------------------------------------------------------------
 # Configuration (all from environment variables - never hardcoded).
 # Read lazily so the process picks up configuration at any time.
@@ -83,6 +89,14 @@ def _session_secret() -> bytes:
 def init_auth_db(path) -> None:
     """Create the protected server-side session revocation database."""
     global _auth_db_path
+    if postgres_enabled():
+        _auth_db_path = 'postgresql'
+        with postgres_connection() as conn:
+            conn.execute('CREATE TABLE IF NOT EXISTS revoked_sessions '
+                         '(jti TEXT PRIMARY KEY, expires_at BIGINT NOT NULL)')
+            conn.execute('CREATE INDEX IF NOT EXISTS revoked_sessions_expiry '
+                         'ON revoked_sessions (expires_at)')
+        return
     _auth_db_path = str(path)
     with sqlite3.connect(_auth_db_path) as conn:
         conn.execute('CREATE TABLE IF NOT EXISTS revoked_sessions '
@@ -99,10 +113,16 @@ def _is_revoked(jti: str) -> bool:
     if not _auth_db_path or not jti:
         return False
     now = int(time.time())
-    with _revoked_lock, sqlite3.connect(_auth_db_path) as conn:
-        conn.execute('DELETE FROM revoked_sessions WHERE expires_at < ?', (now,))
-        return conn.execute(
-            'SELECT 1 FROM revoked_sessions WHERE jti=?', (jti,)).fetchone() is not None
+    with _revoked_lock:
+        if postgres_enabled():
+            with postgres_connection() as conn:
+                conn.execute('DELETE FROM revoked_sessions WHERE expires_at < %s', (now,))
+                return conn.execute(
+                    'SELECT 1 FROM revoked_sessions WHERE jti=%s', (jti,)).fetchone() is not None
+        with sqlite3.connect(_auth_db_path) as conn:
+            conn.execute('DELETE FROM revoked_sessions WHERE expires_at < ?', (now,))
+            return conn.execute(
+                'SELECT 1 FROM revoked_sessions WHERE jti=?', (jti,)).fetchone() is not None
 
 
 def check_credentials(username: str, password: str) -> bool:
@@ -183,9 +203,17 @@ def revoke_token(payload: dict) -> None:
         return
     if not _auth_db_path:
         raise AuthConfigError('Authentication database is not configured')
-    with _revoked_lock, sqlite3.connect(_auth_db_path) as conn:
-        conn.execute('INSERT OR REPLACE INTO revoked_sessions (jti, expires_at) VALUES (?, ?)',
-                     (jti, int(exp)))
+    with _revoked_lock:
+        if postgres_enabled():
+            with postgres_connection() as conn:
+                conn.execute(
+                    'INSERT INTO revoked_sessions (jti, expires_at) VALUES (%s, %s) '
+                    'ON CONFLICT (jti) DO UPDATE SET expires_at=EXCLUDED.expires_at',
+                    (jti, int(exp)))
+        else:
+            with sqlite3.connect(_auth_db_path) as conn:
+                conn.execute('INSERT OR REPLACE INTO revoked_sessions (jti, expires_at) VALUES (?, ?)',
+                             (jti, int(exp)))
 
 
 # ---------------------------------------------------------------------------

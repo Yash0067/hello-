@@ -77,23 +77,28 @@ The backend creates the tabs automatically on first run:
 - **Orders** — OrderID, ClientID, Garment, Notes, DueDate, Status, CreatedAt, UpdatedAt
 - **Appointments** — mirror of every website booking that goes through the backend
 
-Without these variables the system uses **local SQLite** instead — everything still works,
-data just stays on the server disk (use Render's persistent disk).
+Without these variables the system uses **local SQLite** for development. Render
+production must use Neon PostgreSQL through `DATABASE_URL`; it does not use a
+persistent disk or `/var/data`.
 
 ## 3 · Deploying
 
-### Backend (Render — existing config preserved)
+### Backend (Render Free + Neon PostgreSQL)
 
 `backend/render.yaml` already declares the service. In the Render dashboard set:
 
+- `DATABASE_URL` — the Neon PostgreSQL connection string
+- `APP_ENV=production`
 - `ADMIN_USERNAME`, `ADMIN_PASSWORD` (or `ADMIN_PASSWORD_HASH` — generate with
   `python backend/hash_password.py`, recommended), `SESSION_SECRET`
 - `ALLOWED_ORIGINS=https://client-website-theta.vercel.app` (comma-separated list; the
   Vercel preview URL too if you use previews)
 - `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEET_ID` (optional — enables Sheets storage)
-- Keep the persistent disk mounted (`APP_DATA_DIR=/var/data/adarsh-boutique`) for SQLite + Excel exports.
-
 Build/start commands are unchanged: `pip install -r requirements.txt` / `python server.py`.
+
+To migrate an existing local SQLite database, run
+`python backend/migrate_sqlite_to_postgres.py` with `--dry-run` first, then run it
+without that flag after reviewing the counts. It never deletes the SQLite source.
 
 ### Frontend (Vercel — existing config preserved)
 
@@ -108,7 +113,7 @@ Build/start commands are unchanged: `pip install -r requirements.txt` / `python 
 ```
 Browser (website)  ──booking──▶ Google Apps Script ──▶ private Google Sheet   (legacy path, preserved)
 Browser (admin)    ──Bearer token──▶ Python backend ──▶ Google Sheets (gspread, service account)
-                                            └──▶ SQLite + Excel always (fallback + audit trail)
+                                            └──▶ Neon PostgreSQL (production) / SQLite (local only)
 ```
 
 - **Auth** — `POST /api/login` verifies against `ADMIN_USERNAME` + `ADMIN_PASSWORD[_HASH]`

@@ -29,6 +29,7 @@ import sqlite3
 import sys
 import threading
 import time
+from contextlib import contextmanager
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -37,6 +38,7 @@ from zoneinfo import ZoneInfo
 
 import auth
 import store as store_module
+from postgres_db import init_schema, postgres_enabled
 from store import (DuplicateClient, StoreError, get_store, validate_client,
                    validate_measurement_session, validate_order, now_ist,
                    append_appointment_to_sheets)
@@ -80,13 +82,24 @@ STATIC_FILES = {
 }
 
 
+@contextmanager
 def db_connect():
     conn = sqlite3.connect(DB, timeout=25)
     conn.execute('PRAGMA busy_timeout=25000')
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db():
+    if postgres_enabled():
+        init_schema()
+        return
     with db_connect() as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS appointments (
             request_id TEXT PRIMARY KEY, received_at TEXT NOT NULL, name TEXT NOT NULL,
@@ -350,9 +363,14 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/me':
                 admin = self.require_admin()
                 if admin:
+                    selected_store = get_store()
                     self.reply_json(200, {'username': admin['u'], 'role': admin['r'],
-                                          'storage': type(get_store()).__name__,
-                                          'sheets': bool(SHEETS_MIRROR)},
+                                          'storage': type(selected_store).__name__,
+                                          'sheets': bool(SHEETS_MIRROR),
+                                          'sheets_sync': getattr(
+                                              selected_store, 'sync_status',
+                                              lambda: {'enabled': bool(SHEETS_MIRROR), 'ok': True,
+                                                       'error': None})()},
                                     {'Cache-Control': 'no-store', **self.cors_headers()})
                 return
             if path == '/api/clients':
@@ -379,10 +397,13 @@ class Handler(BaseHTTPRequestHandler):
                     # (the legacy appointment table), so count it here directly.
                     try:
                         today = dt.datetime.now(ZoneInfo('Asia/Kolkata')).strftime('%Y-%m-%d')
-                        with db_connect() as conn:
-                            row = conn.execute(
-                                'SELECT COUNT(*) FROM appointments WHERE date=?', (today,)).fetchone()
-                        stats['todays_appointments'] = row[0]
+                        if postgres_enabled():
+                            stats['todays_appointments'] = get_store().stats()['todays_appointments']
+                        else:
+                            with db_connect() as conn:
+                                row = conn.execute(
+                                    'SELECT COUNT(*) FROM appointments WHERE date=?', (today,)).fetchone()
+                            stats['todays_appointments'] = row[0]
                     except sqlite3.Error:
                         pass  # keep the store's own value if the bookings DB is unavailable
                     self.reply_json(200, stats,
@@ -391,12 +412,16 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/appointments':
                 admin = self.require_admin()
                 if admin:
-                    with db_connect() as conn:
-                        rows = conn.execute(
-                            'SELECT * FROM appointments ORDER BY received_at DESC LIMIT 500').fetchall()
+                    rows = store_module.list_appointments()
+                    if rows is None:
+                        with db_connect() as conn:
+                            rows = conn.execute(
+                                'SELECT * FROM appointments ORDER BY received_at DESC LIMIT 500').fetchall()
                     keys = ['request_id', 'received_at', 'name', 'phone', 'service',
                             'date', 'time', 'notes', 'status']
-                    self.reply_json(200, {'appointments': [dict(zip(keys, row)) for row in rows]},
+                    self.reply_json(200, {'appointments': [
+                        dict(row) if isinstance(row, dict) else dict(zip(keys, row))
+                        for row in rows]},
                                     {'Cache-Control': 'no-store', **self.cors_headers()})
                 return
             if path in STATIC_FILES:
@@ -635,13 +660,18 @@ class Handler(BaseHTTPRequestHandler):
             fields = parse_qs(raw, keep_blank_values=True, max_num_fields=30, encoding='utf-8', errors='strict')
             request_id, name, phone, service, date, appointment_time, notes = valid_submission(fields)
             now = now_ist()
-            with db_connect() as conn:
-                conn.execute('BEGIN IMMEDIATE')
-                result = conn.execute('INSERT OR IGNORE INTO appointments VALUES (?,?,?,?,?,?,?,?,?)', (request_id, now, name, phone, service, date, appointment_time, notes, 'Pending'))
-                duplicate = result.rowcount == 0
-                conn.commit()  # Only report success after the database commit succeeds.
+            row = (request_id, now, name, phone, service, date, appointment_time, notes, 'Pending')
+            if postgres_enabled():
+                duplicate = store_module.create_appointment(row)
+            else:
+                with db_connect() as conn:
+                    conn.execute('BEGIN IMMEDIATE')
+                    result = conn.execute('INSERT OR IGNORE INTO appointments VALUES (?,?,?,?,?,?,?,?,?)', row)
+                    duplicate = result.rowcount == 0
+                    conn.commit()  # Only report success after the database commit succeeds.
             if not duplicate:
-                append_to_xlsx((request_id, now, name, phone, service, date, appointment_time, notes, 'Pending'))
+                if os.environ.get('APP_ENV', '').lower() != 'production':
+                    append_to_xlsx((request_id, now, name, phone, service, date, appointment_time, notes, 'Pending'))
                 if SHEETS_MIRROR:
                     # Best-effort mirror to the private Google Sheet; never blocks a booking.
                     append_appointment_to_sheets(os.environ.get('GOOGLE_SHEET_ID', ''),
@@ -657,6 +687,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
+    if os.environ.get('APP_ENV', '').lower() not in ('development', 'local', 'test') and not postgres_enabled():
+        raise SystemExit('DATABASE_URL is required outside local development.')
     init_db()
     auth.init_auth_db(AUTH_DB)
     get_store()  # Fail fast (and log) if the configured store cannot be opened.

@@ -40,6 +40,8 @@ class AuthTests(unittest.TestCase):
         self.assertFalse(auth.verify_password('S3cret!pass', 'garbage'))
 
     def test_token_roundtrip_tamper_expiry(self):
+        os.environ.setdefault('SESSION_SECRET', 'test-secret-please-rotate-1234567890')
+        auth.init_auth_db(os.path.join(tempfile.gettempdir(), 'adarsh-auth-unit.sqlite3'))
         issued = auth.issue_token('admin', ttl_hours=1)
         payload = auth.verify_token(issued['token'])
         self.assertEqual(payload['u'], 'admin')
@@ -162,6 +164,8 @@ class HttpApiTests(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         os.environ['APP_DATA_DIR'] = cls.tmp.name
+        os.environ.pop('DATABASE_URL', None)
+        os.environ['APP_ENV'] = 'test'
         os.environ['ADMIN_USERNAME'] = 'admin'
         os.environ['ADMIN_PASSWORD'] = 'boutique-test-pass'
         os.environ['SESSION_SECRET'] = 'test-secret-please-rotate-1234567890'
@@ -230,7 +234,7 @@ class HttpApiTests(unittest.TestCase):
     def test_login_success_wrong_password_and_lockout(self):
         status, body, headers = self.login()
         self.assertEqual(status, 200)
-        self.assertTrue(body['token'])
+        self.assertNotIn('token', body)
         self.assertIn('HttpOnly', headers.get('Set-Cookie', ''))
         # Wrong password -> clear error, no token.
         status, body, _ = self.login(password='nope')
@@ -252,16 +256,16 @@ class HttpApiTests(unittest.TestCase):
             self.assertEqual(status, 401, '%s %s should require auth' % (method, path))
 
     def test_full_customer_measurement_flow(self):
-        _, login, _ = self.login()
-        token = login['token']
+        _, _, headers = self.login()
+        cookie = headers.get('Set-Cookie', '').split(';')[0]
         # Create
         status, client, _ = self.request('POST', '/api/clients',
-                                         {'name': 'Meera Shah', 'phone': '9820011223'}, token=token)
+                                         {'name': 'Meera Shah', 'phone': '9820011223'}, cookie=cookie)
         self.assertEqual(status, 201)
         cid = client['client_id']
         # Duplicate rejected with 409 + existing record
         status, dup, _ = self.request('POST', '/api/clients',
-                                      {'name': 'Meera S.', 'phone': '+91 98200 11223'}, token=token)
+                                      {'name': 'Meera S.', 'phone': '+91 98200 11223'}, cookie=cookie)
         self.assertEqual(status, 409)
         self.assertEqual(dup['existing']['client_id'], cid)
         # Save two measurement sessions
@@ -269,41 +273,41 @@ class HttpApiTests(unittest.TestCase):
             status, entry, _ = self.request(
                 'POST', '/api/clients/%s/measurements' % cid,
                 {'garment_type': 'Blouse', 'values': {'Chest': chest, 'Shoulder': 14},
-                 'notes': 'visit %d' % i, 'unit_used': 'in'}, token=token)
+                 'notes': 'visit %d' % i, 'unit_used': 'in'}, cookie=cookie)
             self.assertEqual(status, 201)
         # History holds both, newest first; current is latest.
-        status, data, _ = self.request('GET', '/api/clients/%s/measurements' % cid, token=token)
+        status, data, _ = self.request('GET', '/api/clients/%s/measurements' % cid, cookie=cookie)
         self.assertEqual(status, 200)
         self.assertEqual(len(data['history']), 2)
         self.assertEqual(data['history'][0]['values']['Chest'], 37.25)
         self.assertEqual(data['current']['values']['Chest'], 37.25)
         # Search finds her
-        status, listed, _ = self.request('GET', '/api/clients?q=meera', token=token)
+        status, listed, _ = self.request('GET', '/api/clients?q=meera', cookie=cookie)
         self.assertEqual(len(listed['clients']), 1)
         self.assertEqual(listed['clients'][0]['current_measurement']['garment_type'], 'Blouse')
         # Update profile
         status, updated, _ = self.request('PUT', '/api/clients/%s' % cid,
-                                          {'address': 'Charkop, Kandivali West'}, token=token)
+                                          {'address': 'Charkop, Kandivali West'}, cookie=cookie)
         self.assertEqual(updated['address'], 'Charkop, Kandivali West')
         # Delete with confirmation happens in the UI; API deletes.
-        status, _, _ = self.request('DELETE', '/api/clients/%s' % cid, token=token)
+        status, _, _ = self.request('DELETE', '/api/clients/%s' % cid, cookie=cookie)
         self.assertEqual(status, 200)
-        status, _, _ = self.request('GET', '/api/clients/%s' % cid, token=token)
+        status, _, _ = self.request('GET', '/api/clients/%s' % cid, cookie=cookie)
         self.assertEqual(status, 404)
 
     def test_orders_flow(self):
-        _, login, _ = self.login()
-        token = login['token']
+        _, _, headers = self.login()
+        cookie = headers.get('Set-Cookie', '').split(';')[0]
         _, client, _ = self.request('POST', '/api/clients',
-                                    {'name': 'Order Test', 'phone': '9820044556'}, token=token)
+                                    {'name': 'Order Test', 'phone': '9820044556'}, cookie=cookie)
         status, order, _ = self.request('POST', '/api/orders',
                                         {'client_id': client['client_id'], 'garment': 'Kurta',
-                                         'due_date': '2026-11-20', 'notes': 'boat neck'}, token=token)
+                                         'due_date': '2026-11-20', 'notes': 'boat neck'}, cookie=cookie)
         self.assertEqual(status, 201)
         status, updated, _ = self.request('PUT', '/api/orders/%s' % order['order_id'],
-                                          {'status': 'In Progress'}, token=token)
+                                          {'status': 'In Progress'}, cookie=cookie)
         self.assertEqual(updated['status'], 'In Progress')
-        status, stats, _ = self.request('GET', '/api/stats', token=token)
+        status, stats, _ = self.request('GET', '/api/stats', cookie=cookie)
         self.assertGreaterEqual(stats['pending_orders'], 1)
         self.assertGreaterEqual(stats['total_customers'], 1)
 
@@ -317,8 +321,9 @@ class HttpApiTests(unittest.TestCase):
         # Duplicate booking id is acknowledged, not double-stored.
         with urllib.request.urlopen(req, timeout=10) as resp:
             self.assertIn(b'already received', resp.read())
-        _, login, _ = self.login()
-        status, data, _ = self.request('GET', '/api/appointments', token=login['token'])
+        _, _, headers = self.login()
+        cookie = headers.get('Set-Cookie', '').split(';')[0]
+        status, data, _ = self.request('GET', '/api/appointments', cookie=cookie)
         self.assertEqual(status, 200)
         self.assertEqual(data['appointments'][0]['name'], 'Legacy Customer')
 

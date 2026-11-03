@@ -7,3 +7,4 @@ google-auth>=2.0,<3
 webauthn>=2.0,<3
 pyotp>=2.9,<3
 qrcode[pil]>=8,<9
+psycopg[binary]>=3.2,<4
