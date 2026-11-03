@@ -1,4 +1,4 @@
-# Adarsh Boutique — Tailor Shop Management System
+
 
 A professional management system for a real tailoring shop, built **on top of the existing
 boutique website** (public site and appointment booking are preserved exactly as they were).
