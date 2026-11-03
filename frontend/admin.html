@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dashboard · Adarsh Boutique Management</title>
+<style>
+/* ============ Adarsh Boutique design system (matches the public site) ============ */
+:root{
+  --bg:#f2ede3;--panel:#fffefa;--panel-2:#f8f4ec;--ink:#26201d;--muted:#766c66;
+  --maroon:#632c35;--maroon-2:#472029;--gold:#b48c58;--gold-soft:#e8d9c4;
+  --line:#e7ded1;--ok:#1a7a3c;--bad:#b3372f;--shadow:0 10px 30px #2a1a1512;
+  --serif:Georgia,'Times New Roman',serif;--sans:Arial,Helvetica,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#1d1817;--panel:#262020;--panel-2:#2d2625;--ink:#f0e9e1;--muted:#b0a396;
+  --maroon:#c98a94;--maroon-2:#e0aeb5;--gold:#cfa872;--gold-soft:#4a3d2e;
+  --line:#3b322f;--ok:#5cbf85;--bad:#e08a80;--shadow:0 10px 30px #00000042;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--maroon);text-decoration:none}
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:246px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(178deg,var(--maroon-2),#341b21 130%);color:#f4e9d8;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:auto}
+[data-theme="dark"] .sidebar{background:linear-gradient(178deg,#33241f,#191312 130%)}
+.sb-brand{display:flex;gap:12px;align-items:center;padding:24px 20px 20px;border-bottom:1px solid #ffffff22}
+.sb-brand .mark{width:40px;height:40px;flex:none;border:1px solid #d8bd90;border-radius:50%;display:grid;place-items:center;font:italic 22px var(--serif);color:#e8cf9f}
+.sb-brand strong{font:400 17px var(--serif);display:block;line-height:1.1}
+.sb-brand small{display:block;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:#c9ab84;margin-top:4px}
+.nav{padding:14px 10px;display:grid;gap:2px}
+.nav button{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:#e8d9c6;padding:11px 14px;font-size:13.5px;border-radius:6px;text-align:left;transition:background .18s;position:relative}
+.nav button:hover{background:#ffffff14}
+.nav button.active{background:#ffffff1f;color:#fff;font-weight:700}
+.nav button.active::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--gold)}
+.nav svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sb-foot{margin-top:auto;padding:14px 18px;border-top:1px solid #ffffff22;font-size:11px;color:#cbb492;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sb-foot .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---------- main / topbar ---------- */
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:13px 26px}
+.topbar h2{font:400 19px var(--serif);margin:0;letter-spacing:-.01em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--muted);transition:border-color .18s,color .18s}
+.icon-btn:hover{color:var(--maroon);border-color:var(--gold)}
+.icon-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.menu-btn{display:none}
+.view{padding:26px;max-width:1200px;width:100%;margin:0 auto;animation:fade .3s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* ---------- cards & grids ---------- */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px;box-shadow:var(--shadow)}
+.stat .k{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font:400 34px/1.1 var(--serif);margin-top:8px;letter-spacing:-.02em}
+.stat .s{font-size:11px;color:var(--muted);margin-top:6px}
+.stat .s b{color:var(--ok);font-weight:700}
+.grid-2{display:grid;grid-template-columns:1.35fr .95fr;gap:14px;margin-top:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.panel-h h3{font:400 15.5px var(--serif);margin:0}
+.panel-b{padding:16px 18px}
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:9px 16px;background:var(--maroon);border:1px solid var(--maroon);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.05em;border-radius:5px;transition:transform .18s,background .18s}
+[data-theme="dark"] .btn{color:#241718}
+.btn:hover{transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--maroon)}
+.btn.ghost:hover{background:var(--panel-2)}
+.btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.small{min-height:32px;padding:5px 12px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* ---------- tables ---------- */
+.table{width:100%;border-collapse:collapse;font-size:13.5px}
+.table th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+.table td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.table tr:last-child td{border-bottom:0}
+.table tbody tr{transition:background .15s}
+.table tbody tr.rowlink{cursor:pointer}
+.table tbody tr.rowlink:hover{background:var(--panel-2)}
+.table .sub{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.empty{padding:34px;text-align:center;color:var(--muted);font-size:13px}
+/* ---------- badges ---------- */
+.badge{display:inline-block;padding:3px 9px;font-size:10px;font-weight:700;letter-spacing:.06em;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);white-space:nowrap}
+.badge.ok{border-color:#1a7a3c44;color:var(--ok)}
+.badge.warn{border-color:#b48c5866;color:var(--gold)}
+.badge.bad{border-color:#b3372f44;color:var(--bad)}
+.badge.info{border-color:#b48c5888;color:var(--maroon)}
+/* ---------- forms ---------- */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:10px 12px;min-height:41px;outline:none;transition:border-color .18s,box-shadow .18s}
+.field textarea{min-height:74px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px #b48c5822}
+.field .err{color:var(--bad);font-size:11.5px;margin-top:5px;display:none}
+.field.invalid input{border-color:var(--bad)}
+.field.invalid .err{display:block}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* ---------- modal ---------- */
+.modal-back{position:fixed;inset:0;z-index:60;background:#22141266;backdrop-filter:blur(3px);display:grid;place-items:center;padding:18px;animation:fade .2s ease both}
+.modal{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 70px #1e0f0d59;animation:rise .28s cubic-bezier(.2,.8,.25,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
+.modal-h h3{font:400 18px var(--serif);margin:0}
+.modal-b{padding:20px 22px}
+.modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px 20px;border-top:1px solid var(--line)}
+/* ---------- toast ---------- */
+.toast{position:fixed;z-index:80;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);background:#2c211f;color:#f3e9de;padding:12px 18px;border-radius:7px;font-size:13px;box-shadow:0 10px 30px #0005;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:min(480px,92vw);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:#7c2d26}
+/* ============ MEASUREMENT DESIGNER ============ */
+.client-top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 20px;box-shadow:var(--shadow);margin-bottom:14px}
+.client-top .avatar{width:46px;height:46px;flex:none;border-radius:50%;background:var(--maroon);color:#fff;display:grid;place-items:center;font:italic 20px var(--serif)}
+[data-theme="dark"] .client-top .avatar{color:#241718}
+.client-top h3{font:400 20px var(--serif);margin:0}
+.client-top .phone{color:var(--muted);font-size:12.5px;margin-top:2px}
+.client-top .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.designer{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:stretch}
+.body-panel{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;padding:14px 10px 8px;min-height:480px}
+.body-panel svg{width:100%;max-width:236px;height:auto;display:block}
+.measure-panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.garment-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:14px 18px 0}
+.garment-tabs button{padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.05em;background:transparent;border:1px solid var(--line);border-radius:999px;color:var(--muted);transition:all .18s}
+.garment-tabs button:hover{border-color:var(--gold);color:var(--maroon)}
+.garment-tabs button.active{background:var(--maroon);border-color:var(--maroon);color:#fff}
+[data-theme="dark"] .garment-tabs button.active{color:#241718}
+.measure-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;flex-wrap:wrap}
+.unit-toggle{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.unit-toggle button{padding:6px 13px;font-size:11px;font-weight:700;background:transparent;border:0;color:var(--muted)}
+.unit-toggle button.active{background:var(--maroon);color:#fff}
+[data-theme="dark"] .unit-toggle button.active{color:#241718}
+.updated{font-size:11px;color:var(--muted)}
+.m-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:9px;padding:4px 18px 10px;flex:1;align-content:start}
+.m-item{position:relative}
+.m-item label{display:block;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-item input{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:8px 26px 8px 10px;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
+.m-item input:focus,.m-item input.hot{border-color:var(--gold);box-shadow:0 0 0 3px #b48c5833;background:var(--panel)}
+.m-item .unit{position:absolute;right:9px;top:50%;transform:translateY(-42%);font-size:9.5px;color:var(--muted);pointer-events:none}
+.m-item.invalid input{border-color:var(--bad)}
+.m-item .range-err{display:none;font-size:10px;color:var(--bad);margin-top:3px}
+.m-item.invalid .range-err{display:block}
+.custom-fields{padding:2px 18px 10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.notes-box{padding:0 18px 12px}
+.notes-box label{display:block;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.notes-box textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:9px 11px;min-height:56px;resize:vertical;outline:none}
+.notes-box textarea:focus{border-color:var(--gold)}
+.measure-foot{display:flex;align-items:center;gap:10px;padding:13px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+.measure-foot .hint{font-size:11px;color:var(--muted);margin-right:auto}
+/* body figure */
+.body-svg .figure{fill:var(--panel-2);stroke:var(--muted);stroke-width:1.1;transition:fill .3s}
+.body-svg .figure-line{fill:none;stroke:var(--muted);stroke-width:1.1;opacity:.65}
+.body-svg .marker{cursor:pointer}
+.body-svg .marker .dot{display:none}
+.body-svg .marker .hit{fill:transparent;r:16}
+.body-svg .marker .lbl{font:700 9px var(--sans);fill:var(--muted);opacity:0;transition:opacity .15s;letter-spacing:.04em}
+.body-svg .marker:hover .lbl,.body-svg .marker.active .lbl{opacity:1}
+.body-svg .marker.active .dot,.body-svg .marker:hover .dot{fill:var(--maroon);stroke:var(--gold)}
+.body-svg .marker.active .hit{fill:#b48c5822}
+[data-theme="dark"] .body-svg .marker.active .dot{fill:#e0aeb5}
+/* history */
+.hist-list{display:grid;gap:8px}
+.hist-item{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:7px;padding:11px 14px;background:var(--panel-2);cursor:pointer;transition:border-color .18s}
+.hist-item:hover{border-color:var(--gold)}
+.hist-item.selected{border-color:var(--maroon);box-shadow:0 0 0 2px #632c3522}
+.hist-item .when{font-weight:700;font-size:13px}
+.hist-item .meta{font-size:11.5px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-table td.num{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.cmp-table .up{color:var(--bad)}
+.cmp-table .down{color:var(--ok)}
+.cmp-table .same{color:var(--muted)}
+/* ---------- settings ---------- */
+.kv{display:grid;grid-template-columns:170px 1fr;gap:8px 14px;font-size:13.5px}
+.kv dt{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
+.kv dd{margin:0}
+/* ---------- responsive ---------- */
+@media(max-width:1020px){.cards{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;z-index:70;width:250px;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 60px #0007}
+  .sidebar.open{transform:none}
+  .menu-btn{display:grid}
+  .view{padding:16px}
+  .designer{grid-template-columns:1fr}
+  .body-panel{min-height:340px}
+  .client-top .actions{margin-left:0;width:100%}
+}
+@media(max-width:560px){.cards{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{padding:11px 14px}.view{padding:12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Management navigation">
+    <div class="sb-brand">
+      <span class="mark">A</span>
+      <span><strong>Adarsh Boutique</strong><small>Management System</small></span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-route="#/dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+      <button data-route="#/customers"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.7c2.8.2 4.9 2 5.5 5.3"/></svg>Customers</button>
+      <button data-route="#/measurements"><svg viewBox="0 0 24 24"><path d="M4 20 20 4M4 16l2 2M8 12l2 2M12 8l2 2M16 4l2 2"/><path d="M3 21h18" opacity=".5"/></svg>Measurements</button>
+      <button data-route="#/orders"><svg viewBox="0 0 24 24"><path d="M6 7h12l1.5 13.5a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>Orders</button>
+      <button id="nav-bill"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-3-6 3z"/><path d="M9 8h6M9 12h6"/></svg>Create bill</button>
+      <button data-route="#/appointments"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/></svg>Appointments</button>
+      <button data-route="#/settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.4.8a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.4a7 7 0 0 0-2 1.2l-2.4-.8-2 3.5 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.5 2.4-.8a7 7 0 0 0 2 1.2L10 21h4l.5-2.4a7 7 0 0 0 2-1.2l2.4.8 2-3.5-2-1.5c.06-.4.1-.8.1-1.2z"/></svg>Settings</button>
+      <button id="logout-btn"><svg viewBox="0 0 24 24"><path d="M14 4h4a1.5 1.5 0 0 1 1.5 1.5v13A1.5 1.5 0 0 1 18 20h-4M10 17l-5-5 5-5M5 12h11"/></svg>Logout</button>
+    </nav>
+    <div class="sb-foot"><span class="who" id="who">…</span><button class="icon-btn" id="theme-btn" title="Switch theme" aria-label="Switch theme"><svg viewBox="0 0 24 24"><path d="M20 13A8 8 0 1 1 11 4a6.5 6.5 0 0 0 9 9z"/></svg></button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="icon-btn menu-btn" id="menu-btn" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
+      <h2 id="page-title">Dashboard</h2>
+      <button class="icon-btn" id="refresh-btn" title="Refresh" aria-label="Refresh"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3v4h-4"/></svg></button>
+      <a class="icon-btn" href="/" title="View public website" aria-label="View public website"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.7 2.6 4 5.6 4 9s-1.3 6.4-4 9c-2.7-2.6-4-5.6-4-9s1.3-6.4 4-9z"/></svg></a>
+    </div>
+    <div class="view" id="view"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js?v=3"></script>
+<script src="admin.js?v=4"></script>
+</body>
+</html>

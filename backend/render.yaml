@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: adarsh-boutique-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: APP_DATA_DIR
+        value: /var/data/adarsh-boutique
+      - key: APPOINTMENTS_XLSX
+        value: /var/data/adarsh-boutique/Adarsh_Appointments.xlsx
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+    disk:
+      name: adarsh-boutique-data
+      mountPath: /var/data
+      sizeGB: 1

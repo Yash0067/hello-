@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Shop Login · Adarsh Boutique</title>
+<style>
+:root{--ink:#26201d;--muted:#766c66;--maroon:#632c35;--maroon-dark:#472029;--gold:#b48c58;--cream:#f7f4ee;--line:#e7ded1;--paper:#fffefa;--serif:Georgia,'Times New Roman',serif}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(160deg,#f4efe6 0%,var(--cream) 55%,#efe7da 100%);color:var(--ink);font:15px/1.6 Arial,Helvetica,sans-serif;padding:20px}
+.card{width:min(420px,100%);background:var(--paper);border:1px solid var(--line);padding:44px 40px 36px;box-shadow:0 18px 50px #2a1a1520;animation:rise .45s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:30px}
+.brandmark{width:44px;height:44px;border:1px solid #c9ae88;border-radius:50%;display:grid;place-items:center;color:var(--maroon);font-family:var(--serif);font-size:24px;font-style:italic}
+.brandtext strong{font-family:var(--serif);font-size:20px;font-weight:400;display:block;line-height:1}
+.brandtext small{display:block;margin-top:5px;color:#978676;font-size:8px;letter-spacing:.2em;text-transform:uppercase}
+h1{font:400 24px/1.2 var(--serif);margin:0 0 4px}
+p.sub{color:var(--muted);font-size:12.5px;margin:0 0 26px}
+label{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;color:#685c53;margin:0 0 7px;text-transform:uppercase}
+input{width:100%;border:1px solid #e6dbce;background:#fff;padding:12px 13px;font-size:15px;color:var(--ink);outline:none;border-radius:0}
+input:focus{border-color:#956e64;box-shadow:0 0 0 3px #b48c5822}
+.field{margin-bottom:16px}
+button.login{width:100%;min-height:48px;background:var(--maroon);color:#fff;border:1px solid var(--maroon);font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:background .2s,transform .2s;margin-top:6px}
+button.login:hover:not(:disabled){background:var(--maroon-dark);transform:translateY(-1px)}
+button.login:disabled{opacity:.55;cursor:not-allowed}
+.status{min-height:20px;font-size:12.5px;line-height:1.5;margin:12px 0 2px;color:#b3372f}
+.status.ok{color:#1a7a3c}
+.links{display:flex;justify-content:space-between;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11px}
+.links a{color:var(--maroon);text-decoration:underline;text-underline-offset:3px;font-weight:700}
+.note{margin-top:16px;font-size:11px;color:#9b8c7c;line-height:1.6}
+@media(max-width:460px){.card{padding:32px 24px 28px}}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">
+    <span class="brandmark">A</span>
+    <span class="brandtext"><strong>Adarsh Boutique</strong><small>आदर्श बुटीक · Shop login</small></span>
+  </div>
+  <h1>Management login</h1>
+  <p class="sub">For shop staff only. Customers, measurements and orders live behind this door.</p>
+  <form id="form" autocomplete="off">
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required maxlength="80" autocomplete="username" autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required maxlength="256" autocomplete="current-password">
+    </div>
+    <button class="login" id="submit" type="submit">Sign in &nbsp;→</button>
+    <div class="status" id="status" role="alert" aria-live="polite"></div>
+  </form>
+  <div class="links">
+    <a href="/">← Back to website</a>
+    <a href="https://wa.me/919967004638">Need help?</a>
+  </div>
+  <p class="note">Sessions expire automatically after 8 hours. Passwords are set by the shop owner in the server environment variables — never in this page.</p>
+</main>
+<script src="config.js?v=3"></script>
+<script>
+(function(){
+  var API=(window.APP_CONFIG&&window.APP_CONFIG.apiBase)||'';
+  var form=document.getElementById('form'),status=document.getElementById('status'),btn=document.getElementById('submit');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var username=document.getElementById('username').value.trim();
+    var password=document.getElementById('password').value;
+    if(!username||!password){status.textContent='Please enter your username and password.';return}
+    btn.disabled=true;btn.textContent='Signing in?';status.className='status';status.textContent='';
+    fetch(API+'/api/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password})})
+      .then(function(r){return r.json().then(function(data){return {ok:r.ok,status:r.status,data:data}})})
+      .then(function(res){
+        if(res.ok&&res.data&&res.data.ok){
+          status.className='status ok';status.textContent='Welcome back! Opening the dashboard?';
+          setTimeout(function(){location.replace('admin.html')},350);
+        }else{
+          btn.disabled=false;btn.textContent='Sign in ?';
+          status.textContent=(res.data&&res.data.error)||(res.status===429?'Too many attempts. Please wait about 15 minutes.':'Sign in failed. Please try again.');
+          document.getElementById('password').value='';document.getElementById('password').focus();
+        }
+      })
+      .catch(function(){btn.disabled=false;btn.textContent='Sign in ?';status.textContent='Could not reach the shop server. Check your connection or the backend URL.'});
+  });
+})();
+</script>
+</body>
+</html>
