@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Shop Login · Adarsh Boutique</title>
+<title>Shop Login &middot; Adarsh Boutique</title>
 <style>
 :root{--ink:#26201d;--muted:#766c66;--maroon:#632c35;--maroon-dark:#472029;--gold:#b48c58;--cream:#f7f4ee;--line:#e7ded1;--paper:#fffefa;--serif:Georgia,'Times New Roman',serif}
 *,*::before,*::after{box-sizing:border-box}
@@ -36,7 +36,7 @@ button.login:disabled{opacity:.55;cursor:not-allowed}
 <main class="card">
   <div class="brand">
     <span class="brandmark">A</span>
-    <span class="brandtext"><strong>Adarsh Boutique</strong><small>आदर्श बुटीक · Shop login</small></span>
+    <span class="brandtext"><strong>Adarsh Boutique</strong><small>Shop login</small></span>
   </div>
   <h1>Management login</h1>
   <p class="sub">For shop staff only. Customers, measurements and orders live behind this door.</p>
@@ -49,14 +49,14 @@ button.login:disabled{opacity:.55;cursor:not-allowed}
       <label for="password">Password</label>
       <input id="password" name="password" type="password" required maxlength="256" autocomplete="current-password">
     </div>
-    <button class="login" id="submit" type="submit">Sign in &nbsp;→</button>
+    <button class="login" id="submit" type="submit">Sign in &rarr;</button>
     <div class="status" id="status" role="alert" aria-live="polite"></div>
   </form>
   <div class="links">
-    <a href="/">← Back to website</a>
+    <a href="/">&larr; Back to website</a>
     <a href="https://wa.me/919967004638">Need help?</a>
   </div>
-  <p class="note">Sessions expire automatically after 8 hours. Passwords are set by the shop owner in the server environment variables — never in this page.</p>
+  <p class="note">Sessions expire automatically after 8 hours. Passwords are set by the shop owner in server environment variables.</p>
 </main>
 <script src="config.js?v=3"></script>
 <script>
@@ -68,20 +68,20 @@ button.login:disabled{opacity:.55;cursor:not-allowed}
     var username=document.getElementById('username').value.trim();
     var password=document.getElementById('password').value;
     if(!username||!password){status.textContent='Please enter your username and password.';return}
-    btn.disabled=true;btn.textContent='Signing in?';status.className='status';status.textContent='';
+    btn.disabled=true;btn.textContent='Signing in...';status.className='status';status.textContent='';
     fetch(API+'/api/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password})})
       .then(function(r){return r.json().then(function(data){return {ok:r.ok,status:r.status,data:data}})})
       .then(function(res){
         if(res.ok&&res.data&&res.data.ok){
-          status.className='status ok';status.textContent='Welcome back! Opening the dashboard?';
+          status.className='status ok';status.textContent='Welcome back! Opening the dashboard...';
           setTimeout(function(){location.replace('admin.html')},350);
         }else{
-          btn.disabled=false;btn.textContent='Sign in ?';
+          btn.disabled=false;btn.textContent='Sign in ->';
           status.textContent=(res.data&&res.data.error)||(res.status===429?'Too many attempts. Please wait about 15 minutes.':'Sign in failed. Please try again.');
           document.getElementById('password').value='';document.getElementById('password').focus();
         }
       })
-      .catch(function(){btn.disabled=false;btn.textContent='Sign in ?';status.textContent='Could not reach the shop server. Check your connection or the backend URL.'});
+      .catch(function(){btn.disabled=false;btn.textContent='Sign in ->';status.textContent='Could not reach the shop server. Check your connection or the backend URL.'});
   });
 })();
 </script>
