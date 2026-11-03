@@ -187,6 +187,39 @@ a{color:var(--maroon);text-decoration:none}
 }
 @media(max-width:560px){.cards{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{padding:11px 14px}.view{padding:12px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+html,body{overflow-x:hidden}
+.view,.panel,.card,.client-top,.designer{min-width:0}
+.panel-b{overflow-x:auto}
+.table{min-width:620px}
+.btn,.icon-btn,.nav button,.garment-tabs button{touch-action:manipulation}
+@media(max-width:900px){
+  .topbar{padding-inline:18px}
+  .sidebar{height:100dvh}
+  .modal-back{padding:10px}
+  .modal{max-height:calc(100dvh - 20px)}
+}
+@media(max-width:560px){
+  .view{padding:10px}
+  .topbar h2{font-size:17px}
+  .card,.panel-b{padding:14px}
+  .panel-h{padding:13px 14px;align-items:flex-start;flex-wrap:wrap}
+  .panel-h .btn{width:100%}
+  .client-top{padding:14px}
+  .client-top .actions .btn{flex:1}
+  .modal-h,.modal-b,.modal-f{padding-left:15px;padding-right:15px}
+  .modal-f{flex-direction:column-reverse}
+  .modal-f .btn{width:100%;justify-content:center}
+  .kv{grid-template-columns:1fr;gap:3px 0}
+  .kv dd{margin-bottom:8px;overflow-wrap:anywhere}
+  .measure-foot .hint{width:100%;margin-right:0}
+}
+@media(max-width:360px){
+  .topbar{gap:8px;padding-inline:10px}
+  .view{padding:8px}
+  .stat .v{font-size:29px}
+  .m-grid,.custom-fields{padding-left:12px;padding-right:12px}
+  .notes-box,.measure-foot{padding-left:12px;padding-right:12px}
+}
 
 .demo-banner{position:sticky;top:0;z-index:99;background:#8a5a1e;color:#ffe9c9;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-align:center;padding:7px 12px}
 [data-theme="dark"] .demo-banner{background:#5c3f14}

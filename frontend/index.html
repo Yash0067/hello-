@@ -84,6 +84,27 @@ dialog{border:0;padding:0;background:#fffefa;width:min(900px,calc(100% - 32px));
 
 /* Customer rating form removed from the public homepage. */
 #review-form,.reviews-label{display:none}
+/* Responsive guardrails for narrow phones and intermediate tablets. */
+html,body{overflow-x:hidden}
+.wrap,.hero-copy,.contact-card,.section-head>*{min-width:0}
+.button,.filter,#maps-link{touch-action:manipulation}
+@media(max-width:850px) and (min-width:601px){
+  .hero-copy{padding-top:72px;padding-bottom:58px}
+  .hero-photo{min-height:470px}
+  .contact-card{padding:30px}
+  .section{padding:82px 0}
+}
+@media(max-width:380px){
+  .wrap{width:calc(100% - 24px)}
+  .topline{font-size:8px}
+  .hero-copy{padding-inline:12px}
+  .hero-foot{font-size:9px}
+  .hero-badge{left:12px;right:auto;max-width:calc(100% - 24px)}
+  .contact-card{padding:20px 14px}
+  .contact-card h3{font-size:25px}
+  .float-actions{right:12px;left:12px;bottom:14px}
+  .float-actions a{flex:1;padding-inline:8px;font-size:10px}
+}
 </style>
 </head>
 <body>
