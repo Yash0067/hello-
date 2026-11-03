@@ -51,12 +51,24 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent
 FRONTEND = ROOT.parent / 'frontend'
+LOCAL_ENVIRONMENTS = ('development', 'local', 'test')
+APP_ENV = os.environ.get('APP_ENV', '').strip().lower()
+IS_LOCAL_ENVIRONMENT = APP_ENV in LOCAL_ENVIRONMENTS
 default_data_dir = '/tmp/adarsh-boutique-data' if os.environ.get('VERCEL') else str(ROOT / 'data')
-DATA = Path(os.environ.get('APP_DATA_DIR', default_data_dir)).resolve()
-DATA.mkdir(mode=0o700, parents=True, exist_ok=True)
+if IS_LOCAL_ENVIRONMENT:
+    DATA = Path(os.environ.get('APP_DATA_DIR', default_data_dir)).resolve()
+    DATA.mkdir(mode=0o700, parents=True, exist_ok=True)
+else:
+    # Production must use PostgreSQL and must not inspect or create a local data path.
+    DATA = ROOT / 'data'
 DB = DATA / 'appointments.sqlite3'
 AUTH_DB = DATA / 'auth.sqlite3'
-XLSX_PATH = Path(os.environ.get('APPOINTMENTS_XLSX', str(DATA / 'Adarsh_Appointments.xlsx')).strip()).expanduser().resolve()
+if IS_LOCAL_ENVIRONMENT:
+    XLSX_PATH = Path(os.environ.get(
+        'APPOINTMENTS_XLSX', str(DATA / 'Adarsh_Appointments.xlsx')
+    ).strip()).expanduser().resolve()
+else:
+    XLSX_PATH = ROOT / 'Adarsh_Appointments.xlsx'
 SERVICES = {'Blouse stitching', 'Fancy dresses', 'Gowns & western wear', 'Custom co-ord sets', 'Uniform stitching', 'Salwar suits & kurtis', 'Lehenga & bridal wear', 'Petticoat & saree fall', 'Alterations & fittings', 'Something else'}
 COLUMNS = ['Request ID', 'Received (India time)', 'Customer name', 'Phone', 'Service', 'Preferred date', 'Preferred time', 'Customer query', 'Status']
 SHEETS_MIRROR = (os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON', '').strip()
@@ -100,6 +112,8 @@ def init_db():
     if postgres_enabled():
         init_schema()
         return
+    if not IS_LOCAL_ENVIRONMENT:
+        raise RuntimeError('DATABASE_URL is required outside local development.')
     with db_connect() as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS appointments (
             request_id TEXT PRIMARY KEY, received_at TEXT NOT NULL, name TEXT NOT NULL,
